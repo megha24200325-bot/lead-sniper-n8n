@@ -1,0 +1,361 @@
+{
+  "name": "My workflow",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "b548b678-f5d8-4f90-8872-5ebf7f83017c",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "url": "https://api.github.com/repos/n8n-io/n8n/stargazers",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github.v3+json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        208,
+        0
+      ],
+      "id": "7079d690-d4c7-4c9a-bdbf-f8a1cf079b4f",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        416,
+        0
+      ],
+      "id": "bbf2ee4f-9d56-440c-a001-d68835c56bd9",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.github.com/users/{{$json[\"login\"]}}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github.v3+json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        624,
+        208
+      ],
+      "id": "26c5803e-bdd7-41a6-83ba-05c11ec3eb78",
+      "name": "HTTP Request1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "cce19aee-dc35-4b1d-bd87-2c2883eb96d6",
+              "leftValue": "={{$json[\"followers\"]}}",
+              "rightValue": 10,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            },
+            {
+              "id": "226dbcea-4870-466c-9d21-ec07da4ccc78",
+              "leftValue": "={{$json[\"public_repos\"]}}",
+              "rightValue": 1,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1040,
+        208
+      ],
+      "id": "2b6fa5d5-6518-41b4-a5d6-0a69742b0679",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "9d59c99f-b63c-4d1a-8896-46644dc677e9",
+              "name": "followers",
+              "value": "={{$json[\"followers\"]}}",
+              "type": "string"
+            },
+            {
+              "id": "531a943a-a767-43e9-b34a-1942a44ee4f9",
+              "name": "repos",
+              "value": "={{$json[\"public_repos\"]}}",
+              "type": "string"
+            },
+            {
+              "id": "8e9796c2-5d13-405f-bbd3-5ea0bb165a71",
+              "name": "username",
+              "value": "={{$json[\"login\"]}}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        832,
+        208
+      ],
+      "id": "1077c650-261e-4b6b-ae8e-017268b2f19b",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "amount": 1
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1248,
+        208
+      ],
+      "id": "fbd18eeb-bf7b-455d-818a-c62e0347fa08",
+      "name": "Wait",
+      "webhookId": "0d8cdd5d-7460-4025-8eaa-ddf9e9722428"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "process.env.DISCORD_WEBHOOK",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "content",
+              "value": "=New High-Value Lead\n\nName: {{$node[\"HTTP Request1\"].json[\"name\"] ? $node[\"HTTP Request1\"].json[\"name\"] : $node[\"HTTP Request1\"].json[\"login\"]}}\nBio: {{$node[\"HTTP Request1\"].json[\"bio\"] || \"No bio available\"}}\nCompany: {{$node[\"HTTP Request1\"].json[\"company\"] || \"Not specified\"}}\nPitch: {{$node[\"Groq AI\"].json[\"choices\"][0][\"message\"][\"content\"]}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1872,
+        208
+      ],
+      "id": "3759c800-52e1-4d8e-87d4-2b552e4236fe",
+      "name": "HTTP Request3"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.groq.com/openai/v1/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer YOUR_API_KEY"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"llama-3.1-8b-instant\",\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": \"Write a short 1-line sales pitch to connect with this GitHub user.\\n\\nName: {{$json.name || $json.login}}\\nBio: {{$json.bio || 'No bio available'}}\\nCompany: {{$json.company || 'Not specified'}}\"\n    }\n  ]\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1456,
+        208
+      ],
+      "id": "86bc56d3-e5cd-4f7a-9a48-9103c3460b84",
+      "name": "Groq AI"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "26662d63-f487-4e76-af1d-0abee7c6baee",
+              "name": "=content",
+              "value": "=Pitch for {{$json.name || $json.login}}: {{$node['Groq AI'].json['choices'][0]['message']['content']}}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1664,
+        208
+      ],
+      "id": "298a1848-6a5d-4906-9ed5-b4ecf82be91d",
+      "name": "Edit Fields1"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [],
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Groq AI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq AI": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "d601abbf-5a1f-483e-be26-203420b39ddd",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "68ee3b01615af3965ad2b8bde7bf158192ff094e5473e7666159372b38f86c33"
+  },
+  "id": "DDWDagUjgIoEui7H",
+  "tags": []
+}
